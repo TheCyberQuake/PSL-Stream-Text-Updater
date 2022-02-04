@@ -26,7 +26,7 @@ from time import sleep
 # Install required Google API modules
 import importlib, os
 
-# Function to install missing modules
+# Function to auto-magically install missing modules
 def import_neccessary_modules(modname:str)->None:
     '''
         Import a Module,
@@ -87,7 +87,9 @@ def clear():
     else: 
         _ = system('clear') 
 
+
 # If modifying these scopes, delete the file token.pickle.
+# Grants Google API access to read spreadsheets, used to pull data from PSL spreadsheets
 SCOPES = ['https://www.googleapis.com/auth/spreadsheets.readonly']
 
 
@@ -176,7 +178,6 @@ def main():
         print('You will need to obtain a Google API OAuth Client ID named "credentials.json" located in the same folder as this python file')
         print('Reach out to TheCyberQuake to obtain details')
         log('!!!!! Error: Missing creds !!!!!')
-        errinfo()
         sleep(3)
         errexit(11)
 
@@ -206,6 +207,16 @@ def main():
         sleep(5)
         errexit(10)
         
+    
+    """
+    This script currently obtains variables from an initial spreadsheet in order to obtain
+    the document ID and ranges for the reference sheets to pull PSL data from. The main purposes
+    of doing this is the possibility of not needing to update the program in order to get this
+    script working for a new season. An override can be created by creating an override.txt in the
+    same folder as this script, first line the spreadsheet id, second the ranges to read data from.
+    The default sheet this reads from is linked below:
+    https://docs.google.com/spreadsheets/d/10Bir5luBjxfR9HNc7e3NRD-1k6xvcfKkciY9xeNbffw/edit?usp=sharing
+    """
     
     # Check if override file exists, use it if it does
     # TODO: Change override from being another google sheet to instead being a CSV file
@@ -281,14 +292,14 @@ def main():
                             TEAM_STATS_SPREADSHEET_ID = row[2]
                             TEAMNAMES_RANGE_NAME = row[3]
                             TEAMPLAYERS_RANGE_NAME = row[4]
-                            TENTATEK_RANGE_NAME = row[5]
-                            KENSA_RANGE_NAME = row[6]
-                            MATCHES_RANGE_NAME = row[7]
-                            WEEK_DIFFERENCE = row[8]
+                            # Conferences no longer exist. Merge Tentatek and Kensa ranges to single variable
+                            STATS_RANGE_NAME = row[5]
+                            MATCHES_RANGE_NAME = row[6]
+                            WEEK_DIFFERENCE = row[7]
                             # Added in Season 5
                             # Variables reference another sheet for matching up team names with their shorthand
-                            SHORTHAND_SPREADSHEET_ID = row[9]
-                            SHORTHAND_RANGE_NAME = row[10]
+                            SHORTHAND_SPREADSHEET_ID = row[8]
+                            SHORTHAND_RANGE_NAME = row[9]
         else:
             print('')
             print('Script cannot continue without valid Variables sheet. Quiting...')
@@ -339,14 +350,11 @@ def main():
                             TEAM_STATS_SPREADSHEET_ID = row[2]
                             TEAMNAMES_RANGE_NAME = row[3]
                             TEAMPLAYERS_RANGE_NAME = row[4]
-                            TENTATEK_RANGE_NAME = row[5]
-                            KENSA_RANGE_NAME = row[6]
-                            MATCHES_RANGE_NAME = row[7]
-                            WEEK_DIFFERENCE = row[8]
-                            # Added in Season 5
-                            # Variables reference another sheet for matching up team names with their shorthand
-                            SHORTHAND_SPREADSHEET_ID = row[9]
-                            SHORTHAND_RANGE_NAME = row[10]
+                            STATS_RANGE_NAME = row[5]
+                            MATCHES_RANGE_NAME = row[6]
+                            WEEK_DIFFERENCE = row[7]
+                            SHORTHAND_SPREADSHEET_ID = row[8]
+                            SHORTHAND_RANGE_NAME = row[9]
     else:
         if overridebool:
             log('Variables being populated from override variables sheet')
@@ -361,14 +369,11 @@ def main():
             TEAM_STATS_SPREADSHEET_ID = row[2]
             TEAMNAMES_RANGE_NAME = row[3]
             TEAMPLAYERS_RANGE_NAME = row[4]
-            TENTATEK_RANGE_NAME = row[5]
-            KENSA_RANGE_NAME = row[6]
-            MATCHES_RANGE_NAME = row[7]
-            WEEK_DIFFERENCE = row[8]
-            # Added in Season 5
-            # Variables reference another sheet for matching up team names with their shorthand
-            SHORTHAND_SPREADSHEET_ID = row[9]
-            SHORTHAND_RANGE_NAME = row[10]
+            STATS_RANGE_NAME = row[5]
+            MATCHES_RANGE_NAME = row[6]
+            WEEK_DIFFERENCE = row[7]
+            SHORTHAND_SPREADSHEET_ID = row[8]
+            SHORTHAND_RANGE_NAME = row[9]
 
     Team1Name = None
     Week = None
@@ -379,7 +384,9 @@ def main():
             clear()
             # Call Sheets API, grab team names from PSL Schedule
             values = trysheet(service, SCHEDULE_SPREADSHEET_ID, TEAMNAMES_RANGE_NAME, 'Error: Failed to grab team names from PSL Schedule', 4)
-
+            
+            
+            # Write team 1 selection screen
             log('Obtaining current teams list')
             print('Teams:')
             print('')
@@ -395,6 +402,7 @@ def main():
                 log(team + ' added successfully')
             print('')
             
+            # Get team selection via number input
             teamSelection = -1
             try:
                 teamSelection = int(input('Select team 1: '))
@@ -409,22 +417,7 @@ def main():
                 print('Invalid input given, please try again')
                 teamSelection = -1
                 input()
-            # Create blank Team1Name variable, get user input to temp variable
-            
-            #Temp1Name = input("Input First Team's Name: ")
-            # Check user input against Teams list (ignores caps and spaces)
-            #if not Temp1Name == ''or Temp1Name == None:
-            #    for team in Teams:
-            #        if Temp1Name.replace(' ', '').lower() in team.replace(' ', '').lower():
-            #            # Input matched, set Team 1 Name to the team in the list that matched
-            #            Team1Name = team
             clear()
-
-            # Shows error if Team1Name is not set, meaning user input did not match
-            #if not Team1Name:
-            #    print('Error: Invalid team name entry')
-            #    print('Press Enter to try again')
-            #    input()
 
         log('Variable Team1Name set as ' + Team1Name)
 
@@ -437,6 +430,7 @@ def main():
             # Call Sheets API, grab match schedule
             values = trysheet(service, SCHEDULE_SPREADSHEET_ID, MATCHES_RANGE_NAME, 'Error: Could not pull info from PSL Schedule sheet', 6, 'COLUMNS')
 
+            Team2Name = None
             for row in values:
                 # Check to see if selected column matches Team1Name (ignores case and space)
                 if Team1Name.replace(' ', '').lower() in row[0].replace(' ', '').lower():
@@ -444,7 +438,7 @@ def main():
                     log('Trying to pull opposing from PSL Schedule based on Team1Name and Week')
                     Team2Name = row[int(Week)+ int(WEEK_DIFFERENCE)]
                     # Check to ensure the match hasn't already been played (non-0 stats) while it is not a BYE week
-                    if not re.search('\\[0+ pts, 0-0-0\\]', Team2Name) and not 'BYE' in Team2Name and not 'TBD' in Team2Name:
+                    if not re.search('\\[0+ pts, 0-0-0\\]', Team2Name) and not 'BYE' in Team2Name and not 'TBD' in Team2Name and not Team2Name == '':
                         clear()
                         log('Error occured, week and team cobination shows the match was already played')
                         print("Error: Invalid Team and Week Combination. Team has already played that week's match")
@@ -474,9 +468,20 @@ def main():
                         print("Press Enter to try again")
                         input()
                         break
+                    elif Team2Name == '':
+                        clear()
+                        log('Error occured, cell was empty, likely Bye week')
+                        print('Error: Data from this week is empty. Is this a Bye week?')
+                        Team1Name = None
+                        Week = None
+                        print("Press Enter to try again")
+                        input()
+                        break
                     else:
                         # Remove extra text to get just the team name
                         Team2Name = re.sub("\\[0+ pts, 0-0-0\\] vs ", "", Team2Name)
+                        # We found what we need, break to avoid running through the rest of loop
+                        break
 
     # If Team2Name is empty at this point, something broke. Shut EVERYTHING down.
     if not Team2Name:
@@ -510,7 +515,7 @@ def main():
             y = 0
             for player in column:
                 if not y == 0:
-                    #clean up player name, add to team array
+                    # Clean up player name, add to team array
                     player = player.replace('*', '')
                     player = player.replace('[V]', '')
                     player = player.replace('[★]', '')
@@ -553,93 +558,59 @@ def main():
         print(player)
     print('')
 
-    if Team1Players:
-        Team1Con = None
+    if Team1Players and Team2Players:
         # Call Sheets API, grab Tentatek conference first
-        values = trysheet(service, TEAM_STATS_SPREADSHEET_ID, TENTATEK_RANGE_NAME, "Error: could not grab Tentatek conference team stats", 9)
-
-        #log('Checking if ' + Team1Name + ' is in Tentatek conference')
-        log('Looking for ' + Team1Name + ' in stat sheet')
+        values = trysheet(service, TEAM_STATS_SPREADSHEET_ID, STATS_RANGE_NAME, "Error: could not grab team stats", 9)
+        Team1Stats = False
+        Team2Stats = False
+        
+        log('Looking for teams in stat sheet')
         for column in values:
             # Check if current row is the team we are looking for (ignores case and space)
             if Team1Name.replace(' ', '').lower() in column[0].replace(' ', '').lower():
                 # Grab important stats
-                #log(Team1Name + ' is in Tentatek conference. Grabbing stats')
                 log(Team1Name + ' found on stat sheet. Grabbing stats')
-                #Team1Con = 'Tentatek'
                 Team1PTS = column[2]
                 Team1Wins = column[3]
                 Team1Loss = column[5]
                 Team1OT = column[6]
-
-        # if not Team1Con:
-            # # Call Sheets API, grab Kensa conference as team was not in Tentatek
-            # values = trysheet(service, TEAM_STATS_SPREADSHEET_ID, KENSA_RANGE_NAME, "Error: could not grab Kensa conference team stats", 9)
-
-            # log(Team1Name + ' not found in Tentatek conference. Checking Kensa conference')
-            # for column in values:
-            # # Check if current row is the team we are looking for (ignores case and space)
-                # if Team1Name.replace(' ', '').lower() in column[0].replace(' ', '').lower():
-                    # # Grab important stats
-                    # log(Team1Name + ' is in Kensa conference. Grabbing stats')
-                    # Team1Con = 'Kensa'
-                    # Team1PTS = column[2]
-                    # Team1Wins = column[3]
-                    # Team1Loss = column[5]
-                    # Team1OT = column[6]
-
-        # Compile all Team 1 Stats to single string, print that string
-        log('Combining all ' + Team1Name + "'s stats into a single variable")
-        # log(Team1PTS + " pts | " + Team1Wins + "-" + Team1Loss + "-" + Team1OT)
-        Team1Stats = Team1PTS + " pts | " + Team1Wins + "-" + Team1Loss + "-" + Team1OT # + " | " + Team1Con
-        print(Team1Name + ' Stats:')
-        print(Team1Stats)
-        print('')
-
-    if Team2Players:
-        Team2Con = None
-        
-        # Season 5 got rid of conferences
-        # Enjoy this quick and dirty fix of using the Tentatek range to do everything and commenting out anything currently unused
-        # Will properly fix in the future... maybe?
-        
-        # Call Sheets API, grab Tentatek conference first
-        values = trysheet(service, TEAM_STATS_SPREADSHEET_ID, TENTATEK_RANGE_NAME, "Error: could not grab Tentatek conference team stats", 9)
-
-        #log('Checking if ' + Team2Name + ' is in Tentatek conference')
-        log('Looking for ' + Team2Name + ' in stat sheet')
-        for column in values:
-            # Check if current row is the team we are looking for (ignores case and space)
-            log(column)
-            if Team2Name.replace(' ', '').lower() in column[0].replace(' ', '').lower():
+                Team1Stats = True
+                if Team2Stats:
+                    break
+            elif Team2Name.replace(' ', '').lower() in column[0].replace(' ', '').lower():
                 # Grab important stats
-                #log(Team2Name + ' is in Tentatek conference. Grabbing stats')
                 log(Team2Name + ' found on stat sheet. Grabbing stats')
-                #Team2Con = 'Tentatek'
                 Team2PTS = column[2]
                 Team2Wins = column[3]
                 Team2Loss = column[5]
                 Team2OT = column[6]
-
-        # if not Team2Con:
-            # # Call Sheets API, grab Kensa conference as team was not in Tentatek
-            # values = trysheet(service, TEAM_STATS_SPREADSHEET_ID, KENSA_RANGE_NAME, "Error: could not grab Kensa conference team stats", 9)
-
-            # log(Team2Name + ' not found in Tentatek conference. Checking Kensa conference')
-            # for column in values:
-                # # Check if current row is the team we are looking for (ignores case and space)
-                # if Team2Name.replace(' ', '').lower() in column[0].replace(' ', '').lower():
-                    # # Grab important stats
-                    # log(Team2Name + ' is in Kensa conference. Grabbing stats')
-                    # Team2Con = 'Kensa'
-                    # Team2PTS = column[2]
-                    # Team2Wins = column[3]
-                    # Team2Loss = column[5]
-                    # Team2OT = column[6]
-
-        # Compile all Team 2 Stats to single string, print that string
+                Team2Stats = True
+                if Team1Stats:
+                    break
+        
+        if not Team1Stats or not Team2Stats:
+            # Stats were not pulled, abort
+            if not Team1Stats:
+                print('Error: Team 1 stats not found!')
+                print('Quitting...')
+                sleep(5)
+                errexit(13)
+            if not Team2Stats:
+                print('Error: Team 2 stats not found!')
+                print(' Quitting...')
+                sleep(5)
+                errexit(13)
+        
+        # Compile all Team 1 Stats to single string, print that string
+        log('Combining all ' + Team1Name + "'s stats into a single variable")
+        Team1Stats = Team1PTS + " pts | " + Team1Wins + "-" + Team1Loss + "-" + Team1OT
+        print(Team1Name + ' Stats:')
+        print(Team1Stats)
+        print('')
+        
+        # Compile all Team 1 Stats to single string, print that string
         log('Combining all ' + Team2Name + "'s stats into a single variable")
-        Team2Stats = Team2PTS + " pts | " + Team2Wins + "-" + Team2Loss + "-" + Team2OT # + " | " + Team2Con
+        Team2Stats = Team2PTS + " pts | " + Team2Wins + "-" + Team2Loss + "-" + Team2OT
         print(Team2Name + ' Stats:')
         print(Team2Stats)
         print('')
@@ -670,6 +641,7 @@ def main():
     Team1Logo = Team1Name + '.png'
     Team2Logo = Team2Name + '.png'
     
+    # TODO: Set up to automatically download missing logos
     if os.path.exists(dir_path + '\\Team Logos Standardized'):
         # Look through standardized logo images, if match is found copy to Text folder for use on stream
         # Placeholder will be used if no team logo is found
