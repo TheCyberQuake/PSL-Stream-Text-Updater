@@ -15,6 +15,7 @@ import time
 import os
 import re
 import codecs
+import requests
 
 # import only system from os
 from os import system, name
@@ -68,9 +69,12 @@ import_neccessary_modules('google-auth-httplib2')
 import_neccessary_modules('google-auth-oauthlib')
 
 # GoogleAPI gubbins to access google sheets
-from googleapiclient.discovery import build
-from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
+from google.oauth2.credentials import Credentials
+from google_auth_oauthlib.flow import InstalledAppFlow
+from googleapiclient.discovery import build
+from googleapiclient.errors import HttpError
+
 
 # A clear function that will work across OS
 def clear(): 
@@ -110,7 +114,7 @@ def errinfo():
     log(sys.exc_info()[1])
 
 # Exit script with error
-def errexit(errcode = 1):
+def errexit(errcode = 1, errinfo = ''):
     log('!!!!!Script Unsuccessful(' + str(errcode) + ')!!!!!', True)
     sys.exit(errcode)
 
@@ -167,44 +171,23 @@ def main():
     log('', True)
     log('~~~~~Script Start~~~~~', True)
 
-    # Check if Google API Credentials exists, create them if they don't
-    y = 0
-    while not os.path.exists('credentials.json'):
-        # Credentials did not exist. Automatically open browser, instruct user what to do
-        y += 1
-        clear()
-        log('Google credentials not found. Instructing user how to add them.')
-        print('Error: Google Sheets API Credentials required')
-        print('')
-        print('A browser window will automatically open.')
-        print('Please click the "Enable the Google Sheets API" button,')
-        print('then click "Download Client Configuration", and save credentials.json')
-        print('to the location of this script')
-        print('')
-        if y > 1:
-            # User is a moron that can't follow instructions. Show them their increasing stupidity
-            log('Credentials error given ' + str(y) + ' times this session')
-            print("If you already downloaded credentials.json, be sure it's in the correct location")
-            print("Error has displayed " + str(y) + " times this session.")
-            print('')
-        print('Press enter once you have downloaded the file')
-        log('Opening web page for downloading sheet api credentials')
-        # Open web page for user because copy paste is too much for them to handle
-        webbrowser.open_new_tab('https://developers.google.com/sheets/api/quickstart/python')
-        input()
-
+    # Check for API Creds
+    if not os.path.exists('credentials.json'):
+        print('You will need to obtain a Google API OAuth Client ID named "credentials.json" located in the same folder as this python file')
+        print('Reach out to TheCyberQuake to obtain details')
+        log('!!!!! Error: Missing creds !!!!!')
+        errinfo()
+        sleep(3)
+        errexit(11)
 
     creds = None
-    # The file token.pickle stores the user's access and refresh tokens, and is
-    # created automatically when the authorization flow completes for the first
-    # time.
-    if os.path.exists('token.pickle'):
-        log('Token for sheets api credentials exists, using that for session')
-        with open('token.pickle', 'rb') as token:
-            creds = pickle.load(token)
+
+    # Taken straight from updated Kickstart sheets api documenation
+    # Will see if I can later get it to use a different oauth screen that doesn't show as "possibly unsafe"
+    if os.path.exists('token.json'):
+        creds = Credentials.from_authorized_user_file('token.json', SCOPES)
     # If there are no (valid) credentials available, let the user log in.
     if not creds or not creds.valid:
-        log('Credentials invalid or expiring, requesting user to log in')
         if creds and creds.expired and creds.refresh_token:
             creds.refresh(Request())
         else:
@@ -212,15 +195,21 @@ def main():
                 'credentials.json', SCOPES)
             creds = flow.run_local_server(port=0)
         # Save the credentials for the next run
-        log('Saving credentials token')
-        with open('token.pickle', 'wb') as token:
-            pickle.dump(creds, token)
+        with open('token.json', 'w') as token:
+            token.write(creds.to_json())
 
-    service = build('sheets', 'v4', credentials=creds)
+    try:
+        service = build('sheets', 'v4', credentials=creds)
+    except:
+        errinfo()
+        log('!!!!!Error: Could not build Google Sheets API service!!!!!')
+        sleep(5)
+        errexit(10)
+        
     
     # Check if override file exists, use it if it does
     # TODO: Change override from being another google sheet to instead being a CSV file
-    #     Maybe some day I'll get around to this. Maybe by Season 6?
+    #     Maybe some day I'll get around to this. Maybe by Season 6? Lol that didn't happen
     if os.path.exists('override.txt'):
         print('Override File Exists, using that for variables sheet ID and range')
         log('Override file detected, using it for variables sheet ID and range')
@@ -241,6 +230,7 @@ def main():
     # This allows spreadsheet IDs and ranges to be updated for new seasons without requiring a client update
     try:
         sheet = service.spreadsheets()
+        sleep(1)
         result = sheet.values().get(spreadsheetId=VARIABLES_SPREADSHEET_ID,
                                     range=VARIABLES_RANGE_NAME,
                                     majorDimension='COLUMNS').execute()
