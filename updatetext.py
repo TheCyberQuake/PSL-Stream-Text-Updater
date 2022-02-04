@@ -163,6 +163,21 @@ def outfile(fileLoc, fileText):
         WriteFile.close()
 
 def main():
+
+    
+    currentVer = 1.1
+    _startup_cwd = os.getcwd()
+    
+    # Check for updates
+    response = requests.get('https://api.github.com/repos/TheCyberQuake/PSL-Stream-Text-Updater/releases/latest')
+    recentVer = float(response.json()["tag_name"])
+    if currentVer < recentVer:
+        # Newer version found, download and restart
+        myfile = requests.get('https://github.com/TheCyberQuake/PSL-Stream-Text-Updater/releases/download/' + str(recentVer) + '/updatetext.py')
+        open('updatetext.py', 'wb').write(myfile.content)
+        os.chdir(_startup_cwd)
+        os.execv(sys.executable, ['python'] + sys.argv)
+    
     """
     Takes input for name of Team 1 and current week, then
     automatically pulls data from google sheets for team 2 name,
@@ -375,6 +390,7 @@ def main():
             SHORTHAND_SPREADSHEET_ID = row[8]
             SHORTHAND_RANGE_NAME = row[9]
 
+        
     Team1Name = None
     Week = None
     # Ensure Week and Team1Name are valid, loop if not
