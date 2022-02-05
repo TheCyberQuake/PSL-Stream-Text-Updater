@@ -166,17 +166,39 @@ def main():
 
     
     currentVer = 1.1
+    latestVer = None
     _startup_cwd = os.getcwd()
     
     # Check for updates
-    response = requests.get('https://api.github.com/repos/TheCyberQuake/PSL-Stream-Text-Updater/releases/latest')
-    recentVer = float(response.json()["tag_name"])
-    if currentVer < recentVer:
-        # Newer version found, download and restart
-        myfile = requests.get('https://github.com/TheCyberQuake/PSL-Stream-Text-Updater/releases/download/' + str(recentVer) + '/updatetext.py')
-        open('updatetext.py', 'wb').write(myfile.content)
-        os.chdir(_startup_cwd)
-        os.execv(sys.executable, ['python'] + sys.argv)
+    try:
+        # Query github API to grab latest version tag for latest version number
+        response = requests.get('https://api.github.com/repos/TheCyberQuake/PSL-Stream-Text-Updater/releases/latest')
+        latestVer = float(response.json()["tag_name"])
+        log('Current version: ' + str(currentVer))
+        log('Latest version: ' + str(latestVer))
+        # See if we are out of date
+        if currentVer < latestVer:
+            log('Newer version detected, attempting to update...')
+            log('Downloading latest release')
+            # Attempt to download and overwrite script
+            # TODO: make script name dynamic to current file name in case user changes it
+            myfile = requests.get('https://github.com/TheCyberQuake/PSL-Stream-Text-Updater/releases/download/' + str(latestVer) + '/updatetext.py')
+            open('updatetext.py', 'wb').write(myfile.content)
+            log('Downloaded. Attempting to restart into new script...')
+            # Attempt to restart script
+            os.chdir(_startup_cwd)
+            os.execv(sys.executable, ['python'] + sys.argv)
+        else:
+            log('Running latest version')
+    except:
+        # Treat this as a non-fatal, log, and show brief message if new version was found but just couldn't download/boot
+        if latestVer:
+            log('Version ' + str(latestVer) + ' update detected but unable to download')
+            print('Latest version ' + str(latestVer) + ' is currently available, but was unable to be downloaded.')
+            print('Non-fatal error, will continue in 3 seconds')
+            sleep(3)
+        else:
+            log('Unable to get latest version')
     
     """
     Takes input for name of Team 1 and current week, then
