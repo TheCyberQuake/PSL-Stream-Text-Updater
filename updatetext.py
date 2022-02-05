@@ -165,7 +165,7 @@ def outfile(fileLoc, fileText):
 def main():
 
     
-    currentVer = 1.2
+    currentVer = 1.3
     latestVer = None
     _startup_cwd = os.getcwd()
     
@@ -609,23 +609,27 @@ def main():
         log('Looking for teams in stat sheet')
         for column in values:
             # Check if current row is the team we are looking for (ignores case and space)
-            if Team1Name.replace(' ', '').lower() in column[0].replace(' ', '').lower():
+            if Team1Name.replace(' ', '').replace('.', '').lower() in column[1].replace(' ', '').replace('.', '').lower():
                 # Grab important stats
                 log(Team1Name + ' found on stat sheet. Grabbing stats')
-                Team1PTS = column[2]
-                Team1Wins = column[3]
-                Team1Loss = column[5]
-                Team1OT = column[6]
+                Team1PTS = column[3]
+                Team1Wins = column[4]
+                Team1Loss = column[6]
+                Team1OT = column[7]
+                Team1KO = column[8]
+                Team1Rank = column[0]
                 Team1Stats = True
                 if Team2Stats:
                     break
-            elif Team2Name.replace(' ', '').lower() in column[0].replace(' ', '').lower():
+            elif Team2Name.replace(' ', '').replace('.', '').lower() in column[1].replace(' ', '').replace('.', '').lower():
                 # Grab important stats
                 log(Team2Name + ' found on stat sheet. Grabbing stats')
-                Team2PTS = column[2]
-                Team2Wins = column[3]
-                Team2Loss = column[5]
-                Team2OT = column[6]
+                Team2PTS = column[3]
+                Team2Wins = column[4]
+                Team2Loss = column[6]
+                Team2OT = column[7]
+                Team2KO = column[8]
+                Team2Rank = column[0]
                 Team2Stats = True
                 if Team1Stats:
                     break
@@ -648,6 +652,7 @@ def main():
         Team1Stats = Team1PTS + " pts | " + Team1Wins + "-" + Team1Loss + "-" + Team1OT
         print(Team1Name + ' Stats:')
         print(Team1Stats)
+        print('Rank: ' + str(Team1Rank))
         print('')
         
         # Compile all Team 1 Stats to single string, print that string
@@ -655,6 +660,7 @@ def main():
         Team2Stats = Team2PTS + " pts | " + Team2Wins + "-" + Team2Loss + "-" + Team2OT
         print(Team2Name + ' Stats:')
         print(Team2Stats)
+        print('Rank: ' + str(Team2Rank))
         print('')
 
     # Prepare file structure (clear certain old files, create/recreate folders)
@@ -711,7 +717,7 @@ def main():
     
     Team1Short = None
     Team2Short = None
-    values = trysheet(service, SHORTHAND_SPREADSHEET_ID, SHORTHAND_RANGE_NAME, "Error: could not grab Tentatek conference team stats", 10)
+    values = trysheet(service, SHORTHAND_SPREADSHEET_ID, SHORTHAND_RANGE_NAME, "Error: could not fetch teamname shorthand data", 10)
     for column in values:
         if Team1Name.replace(' ', '').lower() in column[0].replace(' ', '').lower():
             Team1Short = column[1]
@@ -759,6 +765,12 @@ def main():
 
     log('Writing Week')
     outfile('Text\Week.txt', 'Week ' + str(Week))
+    
+    log('Writing Team 1 Rank')
+    outfile('Text\Team 1 Rank.txt', Team1Rank)
+    
+    log('Writing Team 2 Rank')
+    outfile('Text\Team 2 Rank.txt', Team2Rank)
     
     log('Writing Team 1 Players')
     MemCount = 1
