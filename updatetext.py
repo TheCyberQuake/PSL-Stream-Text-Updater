@@ -165,7 +165,7 @@ def outfile(fileLoc, fileText):
 def main():
 
     
-    currentVer = 1.1
+    currentVer = 1.2
     latestVer = None
     _startup_cwd = os.getcwd()
     
@@ -254,6 +254,9 @@ def main():
     The default sheet this reads from is linked below:
     https://docs.google.com/spreadsheets/d/10Bir5luBjxfR9HNc7e3NRD-1k6xvcfKkciY9xeNbffw/edit?usp=sharing
     """
+
+    # TODO: Look into seeing if this first section to handle grabbing variables can be improved.
+    # There's probably a better way to do this
     
     # Check if override file exists, use it if it does
     # TODO: Change override from being another google sheet to instead being a CSV file
@@ -351,6 +354,7 @@ def main():
         userconfirm = input('Would you like to create an override that points to another sheet? (Y/n): ')
         if userconfirm.lower() == 'y':
             # TODO: Change override from being another google sheet to instead be a CSV file
+            # Likely would create a pre-formatted csv using python rather than downloading a file
             # Maybe I'll get it done before PSL Season 7 ¯\_(ツ)_/¯
             valid = False
             while not valid:
@@ -535,7 +539,7 @@ def main():
     Team2Players = []
     log('Attempting to grab players for each team')
     for column in values:
-        if Team1Name.replace(' ', '').lower() in column[0].replace(' ', '').lower():
+        if Team1Name.replace(' ', '').replace('.', '').lower() in column[0].replace(' ', '').replace('.','').replace('#','').lower():
             y = 0
             for player in column:
                 if not y == 0:
@@ -549,7 +553,7 @@ def main():
                     Team1Players.append(player);
                 else:
                     y += 1
-        elif Team2Name.replace(' ', '').lower() in column[0].replace(' ', '').lower():
+        elif Team2Name.replace(' ', '').replace('.', '').lower() in column[0].replace(' ', '').replace('.','').replace('#','').lower():
             y = 0
             for player in column:
                 if not y == 0:
