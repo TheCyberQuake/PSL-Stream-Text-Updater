@@ -15,7 +15,7 @@ import time
 import os
 import re
 import codecs
-import requests
+
 
 # import only system from os
 from os import system, name
@@ -67,6 +67,7 @@ def import_neccessary_modules(modname:str)->None:
 import_neccessary_modules('google-api-python-client')
 import_neccessary_modules('google-auth-httplib2')
 import_neccessary_modules('google-auth-oauthlib')
+import_neccessary_modules('requests')
 
 # GoogleAPI gubbins to access google sheets
 from google.auth.transport.requests import Request
@@ -74,6 +75,7 @@ from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
+import requests
 
 
 # A clear function that will work across OS
@@ -355,7 +357,7 @@ def main():
         if userconfirm.lower() == 'y':
             # TODO: Change override from being another google sheet to instead be a CSV file
             # Likely would create a pre-formatted csv using python rather than downloading a file
-            # Maybe I'll get it done before PSL Season 7 ¯\_(ツ)_/¯
+            # Maybe I'll get it done before PSL Season 7 ¯\_(ツ)_/¯: lol also no. I would say by season 8 but we all know that won't happen
             valid = False
             while not valid:
                 clear()
@@ -474,8 +476,9 @@ def main():
 
             Team2Name = None
             for row in values:
-                # Check to see if selected column matches Team1Name (ignores case and space)
-                if Team1Name.replace(' ', '').lower() in row[0].replace(' ', '').lower():
+                # Check to see if selected column matches Team1Name (ignores case, periods, 'the', spaces, and a couple special chars. Seriously y'all I can't filter much more than this to try to prevent issues with names not matching across sheets each season)
+                if Team1Name.lower().replace('the', '').replace('.', '').replace(' ', '').replace('#', '').replace('/', '') in row[0].lower().replace('the', '').replace('.', '').replace(' ', '').replace('#', '').replace('/', ''):
+                    print(Team1Name.lower().replace('the', '').replace('.', '').replace(' ', '').replace('#', '').replace('/', ''))
                     # Use the week number given plus an offset to find the match for that team and week
                     log('Trying to pull opposing from PSL Schedule based on Team1Name and Week')
                     Team2Name = row[int(Week)+ int(WEEK_DIFFERENCE)]
@@ -539,7 +542,7 @@ def main():
     Team2Players = []
     log('Attempting to grab players for each team')
     for column in values:
-        if Team1Name.replace(' ', '').replace('.', '').lower() in column[0].replace(' ', '').replace('.','').replace('#','').lower():
+        if Team1Name.lower().replace('the', '').replace('.', '').replace(' ', '').replace('#', '').replace('/', '') in column[0].lower().replace('the', '').replace('.', '').replace(' ', '').replace('#', '').replace('/', ''):
             y = 0
             for player in column:
                 if not y == 0:
@@ -547,13 +550,14 @@ def main():
                     player = player.replace('*', '')
                     player = player.replace('[V]', '')
                     player = player.replace('[★]', '')
+                    player = player.replace('[Ω]', '')
                     player = re.sub(r"\(.*\)", "", player)
                     player = re.sub(r"\[T.*\]", "", player)
                     player = player.rstrip()
                     Team1Players.append(player);
                 else:
                     y += 1
-        elif Team2Name.replace(' ', '').replace('.', '').lower() in column[0].replace(' ', '').replace('.','').replace('#','').lower():
+        elif Team2Name.lower().replace('the', '').replace('.', '').replace(' ', '').replace('#', '').replace('/', '') in column[0].lower().replace('the', '').replace('.', '').replace(' ', '').replace('#', '').replace('/', ''):
             y = 0
             for player in column:
                 if not y == 0:
@@ -561,6 +565,7 @@ def main():
                     player = player.replace('*', '')
                     player = player.replace('[V]', '')
                     player = player.replace('[★]', '')
+                    player = player.replace('[Ω]', '')
                     player = re.sub(r"\(.*\)", "", player)
                     player = re.sub(r"\[T.*\]", "", player)
                     player = player.rstrip()
@@ -719,9 +724,9 @@ def main():
     Team2Short = None
     values = trysheet(service, SHORTHAND_SPREADSHEET_ID, SHORTHAND_RANGE_NAME, "Error: could not fetch teamname shorthand data", 10)
     for column in values:
-        if Team1Name.replace(' ', '').lower() in column[0].replace(' ', '').lower():
+        if Team1Name.lower().replace('the', '').replace('.', '').replace(' ', '').replace('#', '').replace('/', '') in column[0].lower().replace('the', '').replace('.', '').replace(' ', '').replace('#', '').replace('/', ''):
             Team1Short = column[1]
-        elif Team2Name.replace(' ', '').lower() in column[0].replace(' ', '').lower():
+        elif Team2Name.lower().replace('the', '').replace('.', '').replace(' ', '').replace('#', '').replace('/', '') in column[0].lower().replace('the', '').replace('.', '').replace(' ', '').replace('#', '').replace('/', ''):
             Team2Short = column[1]
     
     if not Team1Short == None and not Team2Short == None:
