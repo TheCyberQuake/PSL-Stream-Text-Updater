@@ -779,7 +779,7 @@ def main():
     outfile('Text\Team 2 Rank.txt', Team2Rank)
     
     log("Writing Team 1 KO's")
-    outfile('Text\Team 2 KO.txt', Team1KO)
+    outfile('Text\Team 1 KO.txt', Team1KO)
     
     log("Writing Team 2 KO's")
     outfile('Text\Team 2 KO.txt', Team2KO)
