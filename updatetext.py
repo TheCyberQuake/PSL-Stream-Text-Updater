@@ -478,7 +478,6 @@ def main():
             for row in values:
                 # Check to see if selected column matches Team1Name (ignores case, periods, 'the', spaces, and a couple special chars. Seriously y'all I can't filter much more than this to try to prevent issues with names not matching across sheets each season)
                 if Team1Name.lower().replace('the', '').replace('.', '').replace(' ', '').replace('#', '').replace('/', '') in row[0].lower().replace('the', '').replace('.', '').replace(' ', '').replace('#', '').replace('/', ''):
-                    print(Team1Name.lower().replace('the', '').replace('.', '').replace(' ', '').replace('#', '').replace('/', ''))
                     # Use the week number given plus an offset to find the match for that team and week
                     log('Trying to pull opposing from PSL Schedule based on Team1Name and Week')
                     Team2Name = row[int(Week)+ int(WEEK_DIFFERENCE)]
@@ -658,6 +657,7 @@ def main():
         print(Team1Name + ' Stats:')
         print(Team1Stats)
         print('Rank: ' + str(Team1Rank))
+        print("KO's: " + str(Team1KO))
         print('')
         
         # Compile all Team 1 Stats to single string, print that string
@@ -666,6 +666,7 @@ def main():
         print(Team2Name + ' Stats:')
         print(Team2Stats)
         print('Rank: ' + str(Team2Rank))
+        print("KO's: " + str(Team2KO))
         print('')
 
     # Prepare file structure (clear certain old files, create/recreate folders)
@@ -777,14 +778,17 @@ def main():
     log('Writing Team 2 Rank')
     outfile('Text\Team 2 Rank.txt', Team2Rank)
     
+    log("Writing Team 1 KO's")
+    outfile('Text\Team 2 KO.txt', Team1KO)
+    
+    log("Writing Team 2 KO's")
+    outfile('Text\Team 2 KO.txt', Team2KO)
+    
     log('Writing Team 1 Players')
     MemCount = 1
     for player in Team1Players:
         filename = 'Text\Team 1 Members\Member' + str(MemCount) + '.txt'
-        if MemCount == 1:
-            filegood = outfile(filename, '(c) ' + player)
-        else:
-            filegood = outfile(filename, player)
+        filegood = outfile(filename, player)
         
         if filegood:
             log('Player ' + str(MemCount) + ' successful')
@@ -794,10 +798,7 @@ def main():
     MemCount = 1
     for player in Team2Players:
         filename = 'Text\Team 2 Members\Member' + str(MemCount) + '.txt'
-        if MemCount == 1:
-            filegood = outfile(filename, '(c) ' + player)
-        else:
-            filegood = outfile(filename, player)
+        filegood = outfile(filename, player)
         
         if filegood:
             log('Player ' + str(MemCount) + ' successful')
